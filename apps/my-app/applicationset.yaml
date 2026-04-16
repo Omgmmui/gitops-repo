@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: my-app-applicationset
+  namespace: argocd
+spec:
+  generators:
+  - matrix:
+      generators:
+        - git:
+            repoURL: https://github.com/example/gitops-repo.git
+            revision: main
+            directories:
+            - path: overlays/*
+        - list:
+            elements:
+            - env: dev
+              namespace: dev
+              replicas: "1"
+            - env: staging
+              namespace: staging
+              replicas: "2"
+            - env: prod
+              namespace: prod
+              replicas: "4"
+  template:
+    metadata:
+      name: my-app-{{path.basename}}-{{env}}
+      namespace: argocd
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/example/gitops-repo.git
+        targetRevision: main
+        path: overlays/{{path.basename}}
+        kustomize:
+          images:
+          - nginx=nginx:latest
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: {{namespace}}
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
