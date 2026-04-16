@@ -1,0 +1,46 @@
+name: Update Image Tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'New image tag'
+        required: true
+        type: string
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+jobs:
+  update-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update image tag
+        run: |
+          cat > "overlays/${{ github.event.inputs.environment }}/patches/image-patch.yaml" << 'EOF'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  template:
+    spec:
+      containers:
+      - name: my-app
+        image: nginx:${{ github.event.inputs.image_tag }}
+EOF
+      - name: Commit and push
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add -A
+          git commit -m "Update image to ${{ github.event.inputs.image_tag }}"
+          git push
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}

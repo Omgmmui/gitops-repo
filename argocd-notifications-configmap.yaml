@@ -1,0 +1,87 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-notifications-cm
+  namespace: argocd
+data:
+  service.slack: |
+    token: $slack-token
+    channel: "#argocd-notifications"
+    username: "ArgoCD"
+  trigger.on-sync-succeeded: |
+    - when: app.status.operationState.phase in ['Succeeded']
+      send:
+        - slack
+  trigger.on-sync-failed: |
+    - when: app.status.operationState.phase in ['Failed', 'Error']
+      send:
+        - slack
+  trigger.on-out-of-sync: |
+    - when: app.status.sync.status in ['OutOfSync']
+      send:
+        - slack
+  trigger.on-deployed: |
+    - when: app.status.health.status in ['Healthy'] and app.status.operationState.phase in ['Succeeded']
+      oncePer: app.metadata.name
+      send:
+        - slack
+  template.app-sync-succeeded: |
+    message: |
+      Application {{.app.metadata.name}} sync succeeded.
+      Namespace: {{.app.metadata.namespace}}
+      Revision: {{.app.status.operationState.revision}}
+    slack:
+      attachments: |
+        [{
+          "title": "Sync Succeeded",
+          "color": "#18a748",
+          "fields": [
+            {"title": "Application", "value": "{{.app.metadata.name}}", "short": true},
+            {"title": "Namespace", "value": "{{.app.metadata.namespace}}", "short": true},
+            {"title": "Revision", "value": "{{.app.status.operationState.revision}}", "short": false}
+          ]
+        }]
+  template.app-sync-failed: |
+    message: |
+      Application {{.app.metadata.name}} sync failed!
+      Namespace: {{.app.metadata.namespace}}
+      Error: {{.app.status.operationState.message}}
+    slack:
+      attachments: |
+        [{
+          "title": "Sync Failed",
+          "color": "#d93a49",
+          "fields": [
+            {"title": "Application", "value": "{{.app.metadata.name}}", "short": true},
+            {"title": "Namespace", "value": "{{.app.metadata.namespace}}", "short": true},
+            {"title": "Error", "value": "{{.app.status.operationState.message}}", "short": false}
+          ]
+        }]
+  template.app-out-of-sync: |
+    message: |
+      Application {{.app.metadata.name}} is out of sync.
+      Namespace: {{.app.metadata.namespace}}
+    slack:
+      attachments: |
+        [{
+          "title": "Out of Sync",
+          "color": "#ffa500",
+          "fields": [
+            {"title": "Application", "value": "{{.app.metadata.name}}", "short": true},
+            {"title": "Namespace", "value": "{{.app.metadata.namespace}}", "short": true}
+          ]
+        }]
+  template.app-deployed: |
+    message: |
+      Application {{.app.metadata.name}} deployed successfully.
+      Namespace: {{.app.metadata.namespace}}
+    slack:
+      attachments: |
+        [{
+          "title": "Deployment Successful",
+          "color": "#18a748",
+          "fields": [
+            {"title": "Application", "value": "{{.app.metadata.name}}", "short": true},
+            {"title": "Namespace", "value": "{{.app.metadata.namespace}}", "short": true}
+          ]
+        }]

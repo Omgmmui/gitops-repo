@@ -5,10 +5,14 @@ metadata:
   namespace: argocd
   finalizers:
   - resources-finalizer.argocd.argoproj.io
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: "#argocd-notifications"
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: "#argocd-notifications"
+    notifications.argoproj.io/subscribe.on-out-of-sync.slack: "#argocd-notifications"
 spec:
   project: default
   source:
-    repoURL: https://github.com/example/gitops-repo.git
+    repoURL: https://github.com/Omgmmui/gitops-repo.git
     targetRevision: main
     path: overlays/staging
     kustomize:

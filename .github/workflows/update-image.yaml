@@ -1,0 +1,63 @@
+name: Update Image Versions
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'charts/my-app/values.yaml'
+
+jobs:
+  update-dev:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract new image tag
+        id: extract
+        run: |
+          IMAGE_TAG=$(grep -A2 "image:" charts/my-app/values.yaml | grep "tag:" | awk '{print $2}')
+          echo "tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Update dev overlay image
+        run: |
+          sed -i "s|image: nginx:.*|image: nginx:${{ steps.extract.outputs.tag }}|" overlays/dev/patches/deployment-patch.yaml
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add overlays/dev/
+          git commit -m "Update dev image to ${{ steps.extract.outputs.tag }}" || echo "No changes to commit"
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: main
+
+  update-staging:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract new image tag
+        id: extract
+        run: |
+          IMAGE_TAG=$(grep -A2 "image:" charts/my-app/values.yaml | grep "tag:" | awk '{print $2}')
+          echo "tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Update staging overlay image
+        run: |
+          sed -i "s|image: nginx:.*|image: nginx:${{ steps.extract.outputs.tag }}|" overlays/staging/patches/deployment-patch.yaml
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add overlays/staging/
+          git commit -m "Update staging image to ${{ steps.extract.outputs.tag }}" || echo "No changes to commit"
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: main

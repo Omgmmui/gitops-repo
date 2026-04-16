@@ -5,24 +5,24 @@ metadata:
   namespace: argocd
 spec:
   generators:
-  - matrix:
-      generators:
-        - git:
-            repoURL: https://github.com/example/gitops-repo.git
-            revision: main
-            directories:
-            - path: overlays/*
-        - list:
-            elements:
-            - env: dev
-              namespace: dev
-              replicas: "1"
-            - env: staging
-              namespace: staging
-              replicas: "2"
-            - env: prod
-              namespace: prod
-              replicas: "4"
+    - matrix:
+        generators:
+          - git:
+              repoURL: https://github.com/Omgmmui/gitops-repo.git
+              revision: main
+              directories:
+                - path: overlays/*
+          - list:
+              elements:
+                - env: dev
+                  namespace: dev
+                  replicas: "1"
+                - env: staging
+                  namespace: staging
+                  replicas: "2"
+                - env: prod
+                  namespace: prod
+                  replicas: "4"
   template:
     metadata:
       name: my-app-{{path.basename}}-{{env}}
@@ -30,12 +30,12 @@ spec:
     spec:
       project: default
       source:
-        repoURL: https://github.com/example/gitops-repo.git
+        repoURL: https://github.com/Omgmmui/gitops-repo.git
         targetRevision: main
         path: overlays/{{path.basename}}
         kustomize:
           images:
-          - nginx=nginx:latest
+            - nginx=nginx:latest
       destination:
         server: https://kubernetes.default.svc
         namespace: {{namespace}}
